@@ -29,9 +29,82 @@ pub fn VirtualList(props: VirtualListProps) -> Element {
     let total_content_height = items.len() as f64 * item_height;
     let max_scroll = (total_content_height - container_height).max(0.0);
 
-    // Calculate visible items based on scroll position
+    let onwheel = move |evt: WheelEvent| {
+        evt.prevent_default();
+        let delta_y = match evt.data().delta() {
+            dioxus_elements::geometry::WheelDelta::Pixels(p) => p.y,
+            dioxus_elements::geometry::WheelDelta::Lines(l) => l.y * 20.0,
+            dioxus_elements::geometry::WheelDelta::Pages(p) => p.y * 100.0,
+        };
+
+        if !is_scrolling() {
+            is_scrolling.set(true);
+        }
+
+        let new_velocity = (velocity() + delta_y * WHEEL_MULTIPLIER)
+            .max(-MAX_VELOCITY)
+            .min(MAX_VELOCITY);
+        velocity.set(new_velocity);
+
+        if velocity().abs() >= MIN_VELOCITY {
+            let new_position = scroll_position() + velocity();
+            scroll_position.set(new_position.max(0.0).min(max_scroll));
+            velocity.set(velocity() * FRICTION);
+        } else {
+            velocity.set(0.0);
+            is_scrolling.set(false);
+        }
+    };
+
+    let onkeydown = move |evt: KeyboardEvent| {
+        let mut velocity_boost = 0.0;
+        match evt.key() {
+            Key::ArrowDown => {
+                evt.prevent_default();
+                velocity_boost = 15.0;
+            }
+            Key::ArrowUp => {
+                evt.prevent_default();
+                velocity_boost = -15.0;
+            }
+            Key::PageDown => {
+                evt.prevent_default();
+                velocity_boost = 40.0;
+            }
+            Key::PageUp => {
+                evt.prevent_default();
+                velocity_boost = -40.0;
+            }
+            Key::Home => {
+                evt.prevent_default();
+                scroll_position.set(0.0);
+                velocity.set(0.0);
+                is_scrolling.set(false);
+                return;
+            }
+            Key::End => {
+                evt.prevent_default();
+                scroll_position.set(max_scroll);
+                velocity.set(0.0);
+                is_scrolling.set(false);
+                return;
+            }
+            _ => {}
+        }
+
+        if velocity_boost != 0.0 {
+            if !is_scrolling() {
+                is_scrolling.set(true);
+            }
+            velocity.set(velocity_boost);
+            let new_position = scroll_position() + velocity_boost;
+            scroll_position.set(new_position.max(0.0).min(max_scroll));
+            velocity.set(velocity() * FRICTION);
+        }
+    };
+
     let start_index = (scroll_position() / item_height).floor() as usize;
-    let end_index = ((start_index + visible_count).min(items.len())); // Buffer items
+    let end_index = (start_index + visible_count).min(items.len());
 
     rsx! {
         div {
@@ -44,33 +117,8 @@ pub fn VirtualList(props: VirtualListProps) -> Element {
             tabindex: "0",
             padding_bottom: "{item_height / 2.0}px", // To ensure the last item is visible
 
-            onwheel: move |evt| {
-                evt.prevent_default();
-
-                let delta_y = match evt.data().delta() {
-                    dioxus_elements::geometry::WheelDelta::Pixels(p) => p.y,
-                    dioxus_elements::geometry::WheelDelta::Lines(l) => l.y * 20.0,
-                    dioxus_elements::geometry::WheelDelta::Pages(p) => p.y * 100.0,
-                };
-
-                if !is_scrolling() {
-                    is_scrolling.set(true);
-                }
-
-                let new_velocity = (velocity() + delta_y * WHEEL_MULTIPLIER)
-                    .max(-MAX_VELOCITY)
-                    .min(MAX_VELOCITY);
-                velocity.set(new_velocity);
-
-                if velocity().abs() >= MIN_VELOCITY {
-                    let new_position = scroll_position() + velocity();
-                    scroll_position.set(new_position.max(0.0).min(max_scroll));
-                    velocity.set(velocity() * FRICTION);
-                } else {
-                    velocity.set(0.0);
-                    is_scrolling.set(false);
-                }
-            },
+            onwheel: onwheel,
+            onkeydown: onkeydown,
 
             div {
                 transform: "translateY({-(scroll_position() % item_height)}px)",
