@@ -3,6 +3,7 @@ mod protocol;
 
 use dioxus::prelude::*;
 use components::virtual_list::VirtualList;
+use components::feed_item::FeedItem;
 use protocol::myprotocol::register_myprotocol_handler;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -32,10 +33,19 @@ fn App() -> Element {
 
         // }
 
-        VirtualList {
-            items: items,
-            container_height: 960,
-            item_height: 100
+        // VirtualList {
+        //     items: items,
+        //     container_height: 960,
+        //     item_height: 100
+        // }
+
+
+        // Example usage of FeedItem component
+        FeedItem{
+            id: "1".to_string(),
+            content: "This is a feed item".to_string(),
+            image_url: "/myprotocol/C:/Users/adams/Desktop/photo-1753109910060-ba1fa8fbd094.avif".to_string(),
+            timestamp: 1633072800, // Example timestamp
         }
     }
 }
