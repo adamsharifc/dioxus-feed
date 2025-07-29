@@ -957,6 +957,9 @@ name = "dioxus-feed"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "mime_guess",
+ "tokio",
+ "urlencoding",
 ]
 
 [[package]]
