@@ -15,7 +15,7 @@ fn main() {
 #[component]
 fn App() -> Element {
     // Register the asset handler for myprotocol in a modular way
-    register_myprotocol_handler();
+    register_myprotocol_handler(vec!["*".to_string()]); 
 
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
