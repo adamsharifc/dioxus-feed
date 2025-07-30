@@ -5,6 +5,20 @@ use dioxus::html::geometry::PixelsVector2D;
 pub struct FeedProps {
 }
 
+// Constants for memory management
+const MAX_ITEMS: usize = 500; // Maximum items to keep in memory
+
+// Item limit management
+fn trim_items_if_needed(items: &mut Vec<String>) {
+    if items.len() > MAX_ITEMS {
+        let excess = items.len() - MAX_ITEMS;
+        // Remove from the middle to keep recent items (top and bottom)
+        let remove_start = MAX_ITEMS / 2;
+        items.drain(remove_start..remove_start + excess);
+        println!("Trimmed {} items to prevent memory growth (keeping {} items)", excess, items.len());
+    }
+}
+
 // Scroll logic hook
 fn use_scroll_management(
     items: Signal<Vec<String>>,
@@ -83,11 +97,14 @@ fn handle_top_scroll_trigger(
         println!("Starting load process from scroll position: {original_scroll_position}");
         println!("Scroll position LOCKED at: {}", locked_scroll_position());
         
-        // Add new items
+        // Add new items with limit management
         let mut new_items = items().clone();
         for i in 1..=3 {
             new_items.insert(0, format!("Older Item {}", new_items.len() + i));
         }
+        
+        // Trim items if needed to prevent memory growth
+        trim_items_if_needed(&mut new_items);
         items.set(new_items);
         
         // Wait for DOM updates
@@ -110,11 +127,14 @@ fn handle_bottom_scroll_trigger(
     println!("User near bottom - loading newer items automatically...");
     is_loading_bottom.set(true);
     
-    // Add newer items to the end
+    // Add newer items to the end with limit management
     let mut new_items = items().clone();
     for i in 1..=3 {
         new_items.push(format!("Bottom Item {}", new_items.len() + i));
     }
+    
+    // Trim items if needed to prevent memory growth
+    trim_items_if_needed(&mut new_items);
     items.set(new_items);
 }
 
@@ -214,6 +234,9 @@ fn use_real_time_polling(items: Signal<Vec<String>>) {
             let mut new_items = items_for_poll().clone();
             let next_num = new_items.len() + 1;
             new_items.push(format!("New Item {}", next_num));
+            
+            // Trim items if needed to prevent memory growth
+            trim_items_if_needed(&mut new_items);
             items_for_poll.set(new_items);
             
             tokio::time::sleep(std::time::Duration::from_secs(3)).await;
@@ -294,17 +317,17 @@ pub fn Feed(props: FeedProps) -> Element {
                     display: none;
                 ",
                 div { "ScrollTop: {scroll_debug}" }
-                div { "Items count: {items().len()}" }
+                div { "Items count: {items().len()} (Max: {MAX_ITEMS})" }
                 div { "Scroll Height: {last_scroll_height}" }
                 div { "Locked Position: {locked_scroll_position}" }
                 div { 
                     style: if scroll_lock() { "color: #ff6b6b; font-weight: bold;" } else { "color: #51cf66;" },
                     if scroll_lock() { "SCROLL PHYSICALLY LOCKED!" } else { "Scroll Active" }
                 }
-                div { "Feed Component - True Scroll Locking" }
+                div { "Feed Component - Memory Limited" }
                 div { 
                     style: "font-size: 12px; color: #999; margin-top: 5px;",
-                    "Scroll to top - container will be locked during load!" 
+                    "Items auto-trimmed at {MAX_ITEMS} limit" 
                 }
             }
             
