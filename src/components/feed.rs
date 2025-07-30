@@ -5,8 +5,14 @@ use dioxus::html::geometry::PixelsVector2D;
 pub struct FeedProps {
 }
 
-// Constants for memory management
+// Configuration constants - centralized magic numbers
 const MAX_ITEMS: usize = 500; // Maximum items to keep in memory
+const ITEMS_PER_LOAD: usize = 3; // Number of items to load at once
+const BOTTOM_THRESHOLD: f64 = 200.0; // Distance from bottom to trigger loading (px)
+const ITEM_HEIGHT: f64 = 110.0; // Estimated item height for scroll calculations (px)
+const POLLING_INTERVAL_SECONDS: u64 = 3; // Real-time polling interval
+const SCROLL_LOCK_DURATION_MS: u64 = 200; // How long to keep scroll locked
+const BOTTOM_LOADING_DURATION_MS: u64 = 600; // Bottom loading indicator duration
 
 // Item limit management
 fn trim_items_if_needed(items: &mut Vec<String>) {
@@ -53,8 +59,8 @@ fn use_scroll_management(
             );
         }
         
-        // Handle bottom scroll trigger
-        if scroll_height - scroll_top - client_height < 200.0 && !is_loading_bottom() {
+        // Handle bottom scroll trigger with configurable threshold
+        if scroll_height - scroll_top - client_height < BOTTOM_THRESHOLD && !is_loading_bottom() {
             handle_bottom_scroll_trigger(items, is_loading_bottom);
         }
     }
@@ -97,9 +103,9 @@ fn handle_top_scroll_trigger(
         println!("Starting load process from scroll position: {original_scroll_position}");
         println!("Scroll position LOCKED at: {}", locked_scroll_position());
         
-        // Add new items with limit management
+        // Add new items using constant
         let mut new_items = items().clone();
-        for i in 1..=3 {
+        for i in 1..=ITEMS_PER_LOAD {
             new_items.insert(0, format!("Older Item {}", new_items.len() + i));
         }
         
@@ -127,9 +133,9 @@ fn handle_bottom_scroll_trigger(
     println!("User near bottom - loading newer items automatically...");
     is_loading_bottom.set(true);
     
-    // Add newer items to the end with limit management
+    // Add newer items using constant
     let mut new_items = items().clone();
-    for i in 1..=3 {
+    for i in 1..=ITEMS_PER_LOAD {
         new_items.push(format!("Bottom Item {}", new_items.len() + i));
     }
     
@@ -157,9 +163,7 @@ async fn restore_scroll_position(
     element: std::rc::Rc<MountedData>,
     mut locked_scroll_position: Signal<f64>,
 ) {
-    let estimated_item_height = 110.0; // min-height: 80px + margins + padding
-    let added_items = 3.0;
-    let calculated_offset = added_items * estimated_item_height;
+    let calculated_offset = ITEMS_PER_LOAD as f64 * ITEM_HEIGHT;
     
     let target_position = if calculated_offset < 50.0 {
         println!("Calculated offset too small ({calculated_offset}), using minimum of 50px");
@@ -210,13 +214,13 @@ fn use_loading_state_management(
     use_future(move || async move {
         loop {
             if reset_loading_top() {
-                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(SCROLL_LOCK_DURATION_MS)).await;
                 reset_loading_top.set(false);
                 reset_scroll_lock.set(false);
                 println!("Top loading completed after extended lock, scroll lock released");
             }
             if reset_loading_bottom() {
-                tokio::time::sleep(std::time::Duration::from_millis(600)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(BOTTOM_LOADING_DURATION_MS)).await;
                 reset_loading_bottom.set(false);
                 println!("Bottom loading completed");
             }
@@ -239,7 +243,7 @@ fn use_real_time_polling(items: Signal<Vec<String>>) {
             trim_items_if_needed(&mut new_items);
             items_for_poll.set(new_items);
             
-            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(POLLING_INTERVAL_SECONDS)).await;
         }
     });
 }
