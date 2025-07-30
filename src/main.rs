@@ -24,7 +24,7 @@ fn App() -> Element {
         
         div {
             class: "app-container",
-            style: "padding: 20px; font-family: Arial, sans-serif;",
+            style: "font-family: Arial, sans-serif; box-sizing: border-box;",
             
             
             Feed {}
