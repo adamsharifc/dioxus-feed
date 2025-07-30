@@ -296,8 +296,11 @@ pub fn Feed(props: FeedProps) -> Element {
         handle_scroll(evt);
     };
 
+    // Check if has items
+    let has_items = !items().is_empty();
+
     rsx! {
-        // Scrollable container - this is where the magic happens (like React's window scroll)
+        // Scrollable container
         div {
             style: format!("
                 height: 98vh;
@@ -313,7 +316,7 @@ pub fn Feed(props: FeedProps) -> Element {
             onscroll: enhanced_handle_scroll,
             onmounted: move |event| scroll_element.set(Some(event.data())),
             
-            // Sticky header for debugging info  
+            // Debug header (hidden by default)
             div {
                 style: "
                     position: sticky;
@@ -340,7 +343,7 @@ pub fn Feed(props: FeedProps) -> Element {
                 div { "Feed Component - Production Ready" }
                 div { 
                     style: "font-size: 12px; color: #999; margin-top: 5px;",
-                    "Error handling enabled, debug logging removed" 
+                    "Error handling enabled, inline styles" 
                 }
             }
             
@@ -348,7 +351,7 @@ pub fn Feed(props: FeedProps) -> Element {
             div {
                 style: "max-width: 600px; margin: 0 auto; background: white; padding: 20px;",
                 
-                // Top loading indicator - sticky at top of content
+                // Top loading indicator
                 if is_loading_top() {
                     div {
                         style: "
@@ -357,7 +360,7 @@ pub fn Feed(props: FeedProps) -> Element {
                             text-align: center;
                             padding: 20px;
                             color: #666;
-                            background: rgba(255, 255, 255, 0.9);
+                            background: rgba(255, 255, 255, 0.95);
                             backdrop-filter: blur(5px);
                             border-radius: 8px;
                             margin-bottom: 20px;
@@ -372,30 +375,58 @@ pub fn Feed(props: FeedProps) -> Element {
                     }
                 }
                 
-                // Feed items container
-                div {
-                    class: "feed",
-                    for item in items().iter() {
-                        div { 
-                            style: "
-                                padding: 20px;
-                                border-bottom: 1px solid #eee;
-                                border: 1px solid #ddd;
-                                margin: 15px 0;
-                                background: white;
-                                border-radius: 8px;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                                min-height: 80px;
-                                display: flex;
-                                align-items: center;
-                                font-size: 16px;
-                            ", 
-                            "{item}" 
+                // Empty state
+                if !has_items {
+                    div {
+                        style: "
+                            text-align: center;
+                            padding: 60px 20px;
+                            color: #666;
+                            background: #fafafa;
+                            border-radius: 8px;
+                            border: 2px dashed #ddd;
+                            margin: 40px 0;
+                        ",
+                        div {
+                            style: "font-size: 48px; margin-bottom: 16px; color: #ccc;",
+                            "📭"
+                        }
+                        h2 {
+                            style: "font-size: 24px; margin: 0 0 8px 0; color: #333;",
+                            "No items yet"
+                        }
+                        p {
+                            style: "font-size: 16px; margin: 0; color: #666;",
+                            "New items will appear here automatically"
                         }
                     }
                 }
                 
-                // Bottom loading indicator - sticky at bottom
+                // Feed items
+                if has_items {
+                    div {
+                        for item in items().iter() {
+                            div { 
+                                style: "
+                                    padding: 20px;
+                                    border-bottom: 1px solid #eee;
+                                    border: 1px solid #ddd;
+                                    margin: 15px 0;
+                                    background: white;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                    min-height: 80px;
+                                    display: flex;
+                                    align-items: center;
+                                    font-size: 16px;
+                                ", 
+                                "{item}" 
+                            }
+                        }
+                    }
+                }
+                
+                // Bottom loading indicator
                 if is_loading_bottom() {
                     div {
                         style: "
@@ -404,7 +435,7 @@ pub fn Feed(props: FeedProps) -> Element {
                             text-align: center;
                             padding: 20px;
                             color: #666;
-                            background: rgba(255, 255, 255, 0.9);
+                            background: rgba(255, 255, 255, 0.95);
                             backdrop-filter: blur(5px);
                             border-radius: 8px;
                             margin-top: 20px;
@@ -414,7 +445,7 @@ pub fn Feed(props: FeedProps) -> Element {
                     }
                 }
                 
-                // Bottom spacer to ensure scroll space
+                // Bottom spacer
                 div {
                     style: "height: 200px; background: transparent;",
                 }
