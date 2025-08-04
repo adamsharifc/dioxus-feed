@@ -3,8 +3,6 @@ mod protocol;
 
 use dioxus::prelude::*;
 use components::virtual_list::VirtualList;
-use components::feed_item::FeedItem;
-use components::feed::Feed;
 use protocol::myprotocol::register_myprotocol_handler;
 
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -16,21 +14,51 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    // Register the asset handler for myprotocol in a modular way
-    register_myprotocol_handler(vec!["*".to_string()]); 
+    register_myprotocol_handler(vec!["assets".to_string()]); 
 
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         
         div {
-            class: "app-container",
-            style: "font-family: Arial, sans-serif; box-sizing: border-box;",
-            
-            
-            Feed {}
+            style: "
+            	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                box-sizing: border-box;
+                margin: 0;
+                padding: 20px;
+                background: #f8fafc;
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            ",
+
+            div {
+                style: "
+                    max-width: 800px;
+                    width: 100%;
+                    background: white;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                    overflow: hidden;
+                    padding: 20px;
+                    box-sizing: border-box;
+                ",
+                
+                header {
+                    class: "feed-header",
+                    h1 {
+                        class: "feed-title",
+                        "Feed"
+                    }
+                    p {
+                        class: "feed-desc",
+                        "Latest updates"
+                    }
+                }
+                
+                VirtualList {}
+            }
         }
-
-
     }
 }
 
